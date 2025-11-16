@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mini Instagram</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #fafafa;
+        }
+
+        header {
+            background: #ffffff;
+            padding: 15px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            border-bottom: 1px solid #ddd;
+        }
+
+        #posts-container {
+            width: 100%;
+            max-width: 900px;
+            margin: 40px auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+        }
+
+        .post-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .post-card img {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+        }
+
+        .post-content {
+            padding: 15px;
+        }
+
+        .caption {
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .likes {
+            font-weight: bold;
+            color: #555;
+        }
+
+        .controls {
+            margin: 40px auto;
+            max-width: 600px;
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+        }
+
+        input,
+        button {
+            width: 100%;
+            margin-top: 10px;
+            padding: 12px;
+            font-size: 16px;
+        }
+
+        button {
+            cursor: pointer;
+            background: #0095f6;
+            border: none;
+            color: white;
+            border-radius: 6px;
+        }
+
+        button:hover {
+            background: #007ad1;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        Mini Instagram 📸
+    </header>
+
+    <div class="controls">
+        <h3>Crear nuevo post</h3>
+
+        <input id="captionInput" type="text" placeholder="Caption">
+        <input id="fileInput" type="file">
+        <input id="userIdInput" type="text" placeholder="User ID">
+
+        <button onclick="createPost()">Crear Post</button>
+
+        <br><br>
+
+        <h3>Eliminar post</h3>
+        <input id="deleteIdInput" type="text" placeholder="ID del post a eliminar">
+        <button onclick="deletePost()">Eliminar</button>
+
+        <br><br>
+
+        <h3>Buscar post por ID</h3>
+        <input id="searchIdInput" type="text" placeholder="ID del post">
+        <button onclick="getPostById()">Buscar</button>
+    </div>
+
+    <div id="posts-container"></div>
+
+    <script>
+        const API_URL = "https://rrncmlzvi2.execute-api.us-east-2.amazonaws.com/dev";
+
+        // ------------------------------
+        // GET ALL POSTS
+        // ------------------------------
+        async function getPosts() {
+            try {
+                const res = await fetch(`${API_URL}/posts`);
+                const posts = await res.json();
+
+                const container = document.getElementById("posts-container");
+                container.innerHTML = "";
+
+                posts.forEach(post => {
+                    const imgUrl = post.imageUrl.startsWith("s3://")
+                        ? s3ToHttp(post.imageUrl)
+                        : post.imageUrl;
+
+                    container.innerHTML += `
+                    <div class="post-card">
+                        <img src="${imgUrl}" alt="post">
+                        <div class="post-content">
+                            <div class="caption">${post.caption}</div>
+                            <div class="likes">❤️ Likes: ${post.likes}</div>
+                            <div><strong>ID:</strong> ${post.postId}</div>
+                        </div>
+                    </div>
+                `;
+                });
+
+            } catch (err) {
+                console.error("Error obteniendo posts:", err);
+            }
+        }
+
+        function s3ToHttp(s3Url) {
+            const parts = s3Url.replace("s3://", "").split("/");
+            const bucket = parts.shift();
+            const key = parts.join("/");
+            return `https://${bucket}.s3.amazonaws.com/${key}`;
+        }
+        async function deletePost() {
+            const id = document.getElementById("deleteIdInput").value.trim();
+
+            if (!id) {
+                alert("Debes ingresar un ID");
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/posts/${id}`, {
+                    method: "DELETE",
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error("Error del servidor:", errorText);
+                    alert("No se pudo eliminar el post");
+                    return;
+                }
+
+                alert("Post eliminado correctamente");
+                getPosts();   // refresca la lista
+
+            } catch (error) {
+                console.error("Error en fetch:", error);
+                alert("Error de red o CORS");
+            }
+        }
+
+        // ------------------------------
+        // CREATE POST (multipart real)
+        // ------------------------------
+        async function createPost() {
+            const caption = document.getElementById("captionInput").value;
+            const fileInput = document.getElementById("fileInput");
+            const userId = document.getElementById("userIdInput").value;
+
+            if (!fileInput.files.length) {
+                alert("Debes seleccionar una imagen");
+                return;
+            }
+
+            const file = fileInput.files[0];
+
+            // 🔥 FormData REAL (multipart)
+            const form = new FormData();
+            form.append("file", file);
+            form.append("caption", caption);
+            form.append("userId", userId);
+
+            const res = await fetch(`${API_URL}/posts`, {
+                method: "POST",
+                body: form
+                // ❌ NO poner headers, fetch ya los genera correctamente
+                // headers: { "Content-Type": "multipart/form-data" }   <-- JAMÁS
+            });
+
+            if (!res.ok) {
+                const err = await res.text();
+                alert("Error: " + err);
+                return;
+            }
+
+            alert("Post creado");
+            getPosts();
+        }
+
+
+        // Helper para convertir archivo a base64
+        function toBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+            });
+        }
+
+
+
+        // ------------------------------
+        // GET POST BY ID
+        // ------------------------------
+        async function getPostById() {
+            const id = document.getElementById("searchIdInput").value;
+
+            const res = await fetch(`${API_URL}/posts/${id}`);
+            const post = await res.json();
+
+            console.log("Post encontrado:", post);
+            alert(JSON.stringify(post, null, 2));
+        }
+
+        getPosts();
+    </script>
+
+</body>
+
+</html>
