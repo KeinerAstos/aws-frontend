@@ -1,1 +1,387 @@
-<!doctype html><html><head><meta charset="utf-8"><title>Mini Instagram</title></head><body>Frontend placeholder</body></html>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INSTASYK</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --gradient-primary: linear-gradient(90deg, #001f3f, #004080, #001f3f);
+            --gradient-secondary: linear-gradient(135deg, #002b5c, #004d99, #0073e6);
+            --bg-gradient: linear-gradient(135deg, #0a0a0a 0%, #1f1f1f 100%);
+            --text-color: #e0e0e0;
+            --accent-color: #c0c0c0;
+            --accent-color2: #a0a0a0;
+            --accent-color3: #808080;
+            --shadow: 0 5px 15px rgba(0,0,0,0.5);
+            --card-bg: rgba(255,255,255,0.05);
+        }
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-color);
+            overflow-x: hidden;
+        }
+        header {
+            background: var(--gradient-primary);
+            padding: 15px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: 700;
+            color: white;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            animation: subtlePulse 3s infinite;
+        }
+        @keyframes subtlePulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.95; }
+            100% { opacity: 1; }
+        }
+        #posts-container {
+            max-width: 600px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            height: calc(100vh - 100px);
+            overflow-y: auto;
+            scroll-snap-type: y mandatory;
+            padding-bottom: 100px;
+        }
+        .post-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            scroll-snap-align: start;
+            backdrop-filter: blur(10px);
+        }
+        .post-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.6);
+        }
+        .post-card img, .post-card video {
+            width: 100%;
+            max-height: 85vh;
+            object-fit: contain;
+            border-radius: 20px;
+            animation: fadeIn 1s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .post-content {
+            padding: 15px;
+            text-align: center;
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: linear-gradient(transparent, rgba(0,0,0,0.7));
+        }
+        .caption {
+            font-size: 16px;
+            color: #fff;
+            margin-bottom: 8px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        .likes {
+            font-weight: 600;
+            color: var(--accent-color);
+            margin-bottom: 5px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        .likes:hover {
+            transform: scale(1.1);
+        }
+        .post-id {
+            font-size: 12px;
+            color: #aaa;
+        }
+        .controls {
+            max-width: 400px;
+            margin: 20px auto;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 10;
+            display: none;
+            backdrop-filter: blur(10px);
+        }
+        .controls.active {
+            display: block;
+            animation: slideUp 0.5s ease;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        .controls h3 {
+            font-size: 16px;
+            color: var(--accent-color2);
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        input, button {
+            width: 100%;
+            margin-top: 8px;
+            padding: 12px;
+            font-size: 14px;
+            border-radius: 30px;
+            border: none;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            transition: all 0.3s;
+        }
+        input:focus {
+            background: rgba(255,255,255,0.2);
+            outline: none;
+        }
+        button {
+            background: var(--gradient-secondary);
+            font-weight: 600;
+            cursor: pointer;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .fa-heart {
+            color: var(--accent-color);
+        }
+        #toggle-controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--gradient-primary);
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            z-index: 11;
+            transition: transform 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #toggle-controls:hover {
+            transform: scale(1.1);
+        }
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            color: #fff;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+        @keyframes spin {
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        /* Additional improvements: Smooth scrolling and touch support */
+        html {
+            scroll-behavior: smooth;
+        }
+        #posts-container {
+            -webkit-overflow-scrolling: touch;
+        }
+        /* Accessibility improvements */
+        button, input {
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <header>INSTASYK 📱</header>
+    <div id="posts-container"></div>
+    <div class="controls" id="controls">
+        <h3>Crear nuevo post</h3>
+        <input id="captionInput" type="text" placeholder="Caption" aria-label="Caption">
+        <input id="fileInput" type="file" accept="image/*,video/*" aria-label="Seleccionar archivo">
+        <input id="userIdInput" type="text" placeholder="User ID" aria-label="User ID">
+        <button onclick="createPost()">Crear Post</button>
+        <h3>Eliminar post</h3>
+        <input id="deleteIdInput" type="text" placeholder="ID del post a eliminar" aria-label="ID del post a eliminar">
+        <button onclick="deletePost()">Eliminar</button>
+        <h3>Buscar post por ID</h3>
+        <input id="searchIdInput" type="text" placeholder="ID del post" aria-label="ID del post">
+        <button onclick="getPostById()">Buscar</button>
+    </div>
+    <button id="toggle-controls" aria-label="Toggle controls"><i class="fas fa-plus"></i></button>
+    <div class="loading" id="loading" aria-label="Cargando"><i class="fas fa-spinner"></i></div>
+    <script>
+        const API_URL = "https://rrncmlzvi2.execute-api.us-east-2.amazonaws.com/dev";
+        const container = document.getElementById("posts-container");
+        const loading = document.getElementById("loading");
+        const controls = document.getElementById("controls");
+        const toggleBtn = document.getElementById("toggle-controls");
+
+        toggleBtn.addEventListener("click", () => {
+            controls.classList.toggle("active");
+            toggleBtn.innerHTML = controls.classList.contains("active") ? '<i class="fas fa-times"></i>' : '<i class="fas fa-plus"></i>';
+        });
+
+        async function getPosts() {
+            loading.style.display = "block";
+            try {
+                const res = await fetch(`${API_URL}/posts`);
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                const posts = await res.json();
+                container.innerHTML = "";
+                posts.forEach((post, index) => {
+                    const imgUrl = post.imageUrl.startsWith("s3://") ? s3ToHttp(post.imageUrl) : post.imageUrl;
+                    const mediaTag = post.imageUrl.endsWith(".mp4") 
+                        ? `<video src="${imgUrl}" autoplay loop muted playsinline aria-label="Video post"></video>` 
+                        : `<img src="${imgUrl}" alt="${post.caption || 'Post image'}" loading="lazy">`;
+                    container.innerHTML += `
+                        <div class="post-card" style="animation-delay: ${index * 0.1}s;" role="article">
+                            ${mediaTag}
+                            <div class="post-content">
+                                <div class="caption">${post.caption}</div>
+                                <div class="likes" onclick="simulateLike(this)" aria-label="Likes"><i class="fa fa-heart"></i> Likes: ${post.likes}</div>
+                                <div class="post-id"><strong>ID:</strong> ${post.postId}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+            } catch (err) {
+                console.error("Error obteniendo posts:", err);
+                alert("Error al cargar posts: " + err.message);
+            } finally {
+                loading.style.display = "none";
+            }
+        }
+
+        function s3ToHttp(s3Url) {
+            const parts = s3Url.replace("s3://", "").split("/");
+            const bucket = parts.shift();
+            const key = parts.join("/");
+            return `https://${bucket}.s3.amazonaws.com/${key}`;
+        }
+
+        async function deletePost() {
+            const id = document.getElementById("deleteIdInput").value.trim();
+            if (!id) return alert("Debes ingresar un ID");
+            loading.style.display = "block";
+            try {
+                const response = await fetch(`${API_URL}/posts/${id}`, { 
+                    method: "DELETE", 
+                    headers: { "Content-Type": "application/json" } 
+                });
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || "Error al eliminar");
+                }
+                alert("Post eliminado correctamente");
+                getPosts();
+            } catch (error) {
+                console.error("Error en fetch:", error);
+                alert("Error: " + error.message);
+            } finally {
+                loading.style.display = "none";
+            }
+        }
+
+        async function createPost() {
+            const caption = document.getElementById("captionInput").value;
+            const fileInput = document.getElementById("fileInput");
+            const userId = document.getElementById("userIdInput").value;
+            if (!fileInput.files.length) return alert("Debes seleccionar una imagen o video");
+            const file = fileInput.files[0];
+            const form = new FormData();
+            form.append("file", file);
+            form.append("caption", caption);
+            form.append("userId", userId);
+            loading.style.display = "block";
+            try {
+                const res = await fetch(`${API_URL}/posts`, { method: "POST", body: form });
+                if (!res.ok) {
+                    const err = await res.text();
+                    throw new Error(err);
+                }
+                alert("Post creado");
+                getPosts();
+            } catch (err) {
+                alert("Error al crear post: " + err.message);
+            } finally {
+                loading.style.display = "none";
+            }
+        }
+
+        function simulateLike(element) {
+            let likes = parseInt(element.textContent.match(/\d+/)[0]) + 1;
+            element.innerHTML = `<i class="fa fa-heart"></i> Likes: ${likes}`;
+            element.style.animation = "subtlePulse 0.5s";
+            setTimeout(() => element.style.animation = "", 500);
+        }
+
+        async function getPostById() {
+            const id = document.getElementById("searchIdInput").value;
+            if (!id) return alert("Ingresa un ID");
+            loading.style.display = "block";
+            try {
+                const res = await fetch(`${API_URL}/posts/${id}`);
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                const post = await res.json();
+                console.log("Post encontrado:", post);
+                alert(JSON.stringify(post, null, 2));
+            } catch (err) {
+                alert("Error al buscar post: " + err.message);
+            } finally {
+                loading.style.display = "none";
+            }
+        }
+
+        // Infinite scroll placeholder (simulate loading more if API supports)
+        container.addEventListener("scroll", () => {
+            if (container.scrollTop + container.clientHeight >= container.scrollHeight - 100) {
+                // Add logic for pagination if available
+            }
+        });
+
+        // Initial load
+        getPosts();
+
+        // Add touch events for better mobile experience
+        let touchStartY = 0;
+        container.addEventListener('touchstart', (e) => {
+            touchStartY = e.touches[0].clientY;
+        });
+        container.addEventListener('touchend', (e) => {
+            const touchEndY = e.changedTouches[0].clientY;
+            if (touchEndY > touchStartY + 50) {
+                // Swiped down - refresh
+                getPosts();
+            }
+        });
+    </script>
+</body>
+</html>

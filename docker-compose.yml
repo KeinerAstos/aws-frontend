@@ -1,1 +1,9 @@
-version: '3'
+version: "3.8"
+
+services:
+  frontend:
+    build: .
+    ports:
+      - "8080:80"      
+    container_name: aws_frontend
+    restart: always

@@ -1,0 +1,24 @@
+# Node
+node_modules/
+dist/
+build/
+
+# Logs
+logs/
+*.log
+
+# Editor config
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker
+*.pid
+*.tar
+
+# Temporary files
+*.tmp
+*.swp
