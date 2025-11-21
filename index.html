@@ -1,157 +1,95 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mini Instagram</title>
-
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #fafafa;
-        }
-
-        header {
-            background: #ffffff;
-            padding: 15px;
-            text-align: center;
-            font-size: 24px;
-            font-weight: bold;
-            border-bottom: 1px solid #ddd;
-        }
-
-        #posts-container {
-            width: 100%;
-            max-width: 900px;
-            margin: 40px auto;
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 25px;
-        }
-
-        .post-card {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
-
-        .post-card img {
-            width: 100%;
-            height: 250px;
-            object-fit: cover;
-        }
-
-        .post-content {
-            padding: 15px;
-        }
-
-        .caption {
-            font-size: 16px;
-            margin-bottom: 10px;
-        }
-
-        .likes {
-            font-weight: bold;
-            color: #555;
-        }
-
-        .controls {
-            margin: 40px auto;
-            max-width: 600px;
-            background: #ffffff;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
-        }
-
-        input,
-        button {
-            width: 100%;
-            margin-top: 10px;
-            padding: 12px;
-            font-size: 16px;
-        }
-
-        button {
-            cursor: pointer;
-            background: #0095f6;
-            border: none;
-            color: white;
-            border-radius: 6px;
-        }
-
-        button:hover {
-            background: #007ad1;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INSTASYK</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="public/css/style.css">
 </head>
-
 <body>
+<header>INSTASYK 📱</header>
 
-    <header>
-        Mini Instagram 📸
-    </header>
 
-    <div class="controls">
-        <h3>Crear nuevo post</h3>
+<!-- Contenedor principal más limpio y centrado -->
+<main id="posts-container"></main>
 
-        <input id="captionInput" type="text" placeholder="Caption">
-        <input id="fileInput" type="file">
-        <input id="userIdInput" type="text" placeholder="User ID">
 
-        <button onclick="createPost()">Crear Post</button>
+<!-- Controles más organizados -->
+<aside class="controls" id="controls">
+<section>
+<h3>Crear nuevo post</h3>
+<input id="captionInput" type="text" placeholder="Caption" aria-label="Caption">
+<input id="fileInput" type="file" accept="image/*,video/*" aria-label="Seleccionar archivo">
+<input id="userIdInput" type="text" placeholder="User ID" aria-label="User ID">
+<button onclick="createPost()">Crear Post</button>
+</section>
 
-        <br><br>
 
-        <h3>Eliminar post</h3>
-        <input id="deleteIdInput" type="text" placeholder="ID del post a eliminar">
-        <button onclick="deletePost()">Eliminar</button>
+<section>
+<h3>Eliminar post</h3>
+<input id="deleteIdInput" type="text" placeholder="ID del post a eliminar" aria-label="ID del post a eliminar">
+<button onclick="deletePost()">Eliminar</button>
+</section>
 
-        <br><br>
 
-        <h3>Buscar post por ID</h3>
-        <input id="searchIdInput" type="text" placeholder="ID del post">
-        <button onclick="getPostById()">Buscar</button>
-    </div>
+<section>
+<h3>Buscar post</h3>
+<input id="searchIdInput" type="text" placeholder="ID del post" aria-label="ID del post">
+<button onclick="getPostById()">Buscar</button>
+</section>
+</aside>
 
-    <div id="posts-container"></div>
 
+<!-- Botón flotante más discreto -->
+<button id="toggle-controls" aria-label="Mostrar controles"><i class="fas fa-plus"></i></button>
+
+
+<!-- Indicador de carga -->
+<div class="loading" id="loading" aria-label="Cargando"><i class="fas fa-spinner"></i></div>
     <script>
         const API_URL = "https://rrncmlzvi2.execute-api.us-east-2.amazonaws.com/dev";
+        const container = document.getElementById("posts-container");
+        const loading = document.getElementById("loading");
+        const controls = document.getElementById("controls");
+        const toggleBtn = document.getElementById("toggle-controls");
 
-        // ------------------------------
-        // GET ALL POSTS
-        // ------------------------------
+        toggleBtn.addEventListener("click", () => {
+            controls.classList.toggle("active");
+            toggleBtn.innerHTML = controls.classList.contains("active") ? '<i class="fas fa-times"></i>' : '<i class="fas fa-plus"></i>';
+        });
+
         async function getPosts() {
+            loading.style.display = "block";
             try {
                 const res = await fetch(`${API_URL}/posts`);
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
                 const posts = await res.json();
-
-                const container = document.getElementById("posts-container");
                 container.innerHTML = "";
-
-                posts.forEach(post => {
-                    const imgUrl = post.imageUrl.startsWith("s3://")
-                        ? s3ToHttp(post.imageUrl)
-                        : post.imageUrl;
-
+                posts.forEach((post, index) => {
+                    const imgUrl = post.imageUrl.startsWith("s3://") ? s3ToHttp(post.imageUrl) : post.imageUrl;
+                    const mediaTag = post.imageUrl.endsWith(".mp4")
+                        ? `<video src="${imgUrl}" autoplay loop muted playsinline aria-label="Video post"></video>`
+                        : `<img src="${imgUrl}" alt="${post.caption || 'Post image'}" loading="lazy">`;
                     container.innerHTML += `
-                    <div class="post-card">
-                        <img src="${imgUrl}" alt="post">
-                        <div class="post-content">
-                            <div class="caption">${post.caption}</div>
-                            <div class="likes">❤️ Likes: ${post.likes}</div>
-                            <div><strong>ID:</strong> ${post.postId}</div>
+                        <div class="post-card" style="animation-delay: ${index * 0.1}s;" role="article">
+                            ${mediaTag}
+                            <div class="post-content">
+                                <div class="caption">${post.caption}</div>
+                                <div class="likes" onclick="simulateLike(this)" aria-label="Likes"><i class="fa fa-heart"></i> Likes: ${post.likes}</div>
+                                <div class="post-id"><strong>ID:</strong> ${post.postId}</div>
+                            </div>
                         </div>
-                    </div>
-                `;
+                    `;
                 });
-
             } catch (err) {
                 console.error("Error obteniendo posts:", err);
+                alert("Error al cargar posts: " + err.message);
+            } finally {
+                loading.style.display = "none";
             }
         }
 
@@ -161,105 +99,105 @@
             const key = parts.join("/");
             return `https://${bucket}.s3.amazonaws.com/${key}`;
         }
+
         async function deletePost() {
             const id = document.getElementById("deleteIdInput").value.trim();
-
-            if (!id) {
-                alert("Debes ingresar un ID");
-                return;
-            }
-
+            if (!id) return alert("Debes ingresar un ID");
+            loading.style.display = "block";
             try {
                 const response = await fetch(`${API_URL}/posts/${id}`, {
                     method: "DELETE",
-                    headers: {
-                        "Content-Type": "application/json"
-                    }
+                    headers: { "Content-Type": "application/json" }
                 });
-
                 if (!response.ok) {
                     const errorText = await response.text();
-                    console.error("Error del servidor:", errorText);
-                    alert("No se pudo eliminar el post");
-                    return;
+                    throw new Error(errorText || "Error al eliminar");
                 }
-
                 alert("Post eliminado correctamente");
-                getPosts();   // refresca la lista
-
+                getPosts();
             } catch (error) {
                 console.error("Error en fetch:", error);
-                alert("Error de red o CORS");
+                alert("Error: " + error.message);
+            } finally {
+                loading.style.display = "none";
             }
         }
 
-        // ------------------------------
-        // CREATE POST (multipart real)
-        // ------------------------------
         async function createPost() {
             const caption = document.getElementById("captionInput").value;
             const fileInput = document.getElementById("fileInput");
             const userId = document.getElementById("userIdInput").value;
-
-            if (!fileInput.files.length) {
-                alert("Debes seleccionar una imagen");
-                return;
-            }
-
+            if (!fileInput.files.length) return alert("Debes seleccionar una imagen o video");
             const file = fileInput.files[0];
-
-            // 🔥 FormData REAL (multipart)
             const form = new FormData();
             form.append("file", file);
             form.append("caption", caption);
             form.append("userId", userId);
-
-            const res = await fetch(`${API_URL}/posts`, {
-                method: "POST",
-                body: form
-                // ❌ NO poner headers, fetch ya los genera correctamente
-                // headers: { "Content-Type": "multipart/form-data" }   <-- JAMÁS
-            });
-
-            if (!res.ok) {
-                const err = await res.text();
-                alert("Error: " + err);
-                return;
+            loading.style.display = "block";
+            try {
+                const res = await fetch(`${API_URL}/posts`, { method: "POST", body: form });
+                if (!res.ok) {
+                    const err = await res.text();
+                    throw new Error(err);
+                }
+                alert("Post creado");
+                getPosts();
+            } catch (err) {
+                alert("Error al crear post: " + err.message);
+            } finally {
+                loading.style.display = "none";
             }
-
-            alert("Post creado");
-            getPosts();
         }
 
-
-        // Helper para convertir archivo a base64
-        function toBase64(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = reject;
-            });
+        function simulateLike(element) {
+            let likes = parseInt(element.textContent.match(/\d+/)[0]) + 1;
+            element.innerHTML = `<i class="fa fa-heart"></i> Likes: ${likes}`;
+            element.style.animation = "subtlePulse 0.5s";
+            setTimeout(() => element.style.animation = "", 500);
         }
 
-
-
-        // ------------------------------
-        // GET POST BY ID
-        // ------------------------------
         async function getPostById() {
             const id = document.getElementById("searchIdInput").value;
-
-            const res = await fetch(`${API_URL}/posts/${id}`);
-            const post = await res.json();
-
-            console.log("Post encontrado:", post);
-            alert(JSON.stringify(post, null, 2));
+            if (!id) return alert("Ingresa un ID");
+            loading.style.display = "block";
+            try {
+                const res = await fetch(`${API_URL}/posts/${id}`);
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                const post = await res.json();
+                console.log("Post encontrado:", post);
+                alert(JSON.stringify(post, null, 2));
+            } catch (err) {
+                alert("Error al buscar post: " + err.message);
+            } finally {
+                loading.style.display = "none";
+            }
         }
 
-        getPosts();
-    </script>
+        // Infinite scroll placeholder (simulate loading more if API supports)
+        container.addEventListener("scroll", () => {
+            if (container.scrollTop + container.clientHeight >= container.scrollHeight - 100) {
+                // Add logic for pagination if available
+            }
+        });
 
+        // Initial load
+        getPosts();
+
+        // Add touch events for better mobile experience
+        let touchStartY = 0;
+        container.addEventListener('touchstart', (e) => {
+            touchStartY = e.touches[0].clientY;
+        });
+        container.addEventListener('touchend', (e) => {
+            const touchEndY = e.changedTouches[0].clientY;
+            if (touchEndY > touchStartY + 50) {
+                // Swiped down - refresh
+                getPosts();
+            }
+        });
+    </script>
 </body>
 
 </html>
